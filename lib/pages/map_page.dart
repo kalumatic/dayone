@@ -1,3 +1,4 @@
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import "package:google_maps_flutter/google_maps_flutter.dart";
@@ -13,6 +14,9 @@ class MapPage extends StatefulWidget {
 class _MapPageState extends State<MapPage> {
   Location _locationController = new Location();
 
+  final Completer<GoogleMapController> _mapController =
+      Completer<GoogleMapController>();
+
   static const LatLng _MATF = LatLng(44.820048144999575, 20.458771869031093);
 
   LatLng? _currentP = null;
@@ -26,18 +30,34 @@ class _MapPageState extends State<MapPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: GoogleMap(
-          initialCameraPosition: CameraPosition(
-            target: _MATF,
-            zoom: 18,
-          ),
-          markers: {
-            Marker(
-                markerId: MarkerId("_currentLocation"),
-                icon: BitmapDescriptor.defaultMarker,
-                position: _MATF)
-          }),
+      body: _currentP == null
+          ? const Center(child: Text("Loading..."))
+          : GoogleMap(
+              onMapCreated: ((GoogleMapController controller) =>
+                  _mapController.complete(controller)),
+              initialCameraPosition: CameraPosition(
+                target: _MATF,
+                zoom: 18,
+              ),
+              markers: {
+                  Marker(
+                      markerId: MarkerId("_currentLocation"),
+                      icon: BitmapDescriptor.defaultMarkerWithHue(
+                          BitmapDescriptor.hueAzure),
+                      position: _currentP!),
+                  Marker(
+                      markerId: MarkerId("_destinationLocation"),
+                      icon: BitmapDescriptor.defaultMarker,
+                      position: _MATF)
+                }),
     );
+  }
+
+  Future<void> cameraToPosition(LatLng pos) async {
+    final GoogleMapController controller = await _mapController.future;
+    CameraPosition _newCameraPosition = CameraPosition(target: pos, zoom: 18);
+    await controller
+        .animateCamera(CameraUpdate.newCameraPosition(_newCameraPosition));
   }
 
   Future<void> getLocationUpdates() async {
@@ -66,7 +86,7 @@ class _MapPageState extends State<MapPage> {
         setState(() {
           _currentP =
               LatLng(currentLocation.latitude!, currentLocation.longitude!);
-          print(_currentP);
+          cameraToPosition(_currentP!);
         });
       }
     });
