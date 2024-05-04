@@ -1,8 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import "package:google_maps_flutter/google_maps_flutter.dart";
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
+import 'package:flutter_map_math/flutter_geo_math.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -17,10 +18,14 @@ class _MapPageState extends State<MapPage> {
   final Completer<GoogleMapController> _mapController =
       Completer<GoogleMapController>();
 
-  static const LatLng _MATF = LatLng(44.820048144999575, 20.458771869031093);
+  static const LatLng _MATF =
+      LatLng(44.820048144999575, 20.458771869031093); // just for start position
 
   LatLng? _currentP = null;
+  LatLng? _lastP = null;
   LatLng? _startP = null;
+
+  double _distanceCovered = 0.0;
 
   @override
   void initState() {
@@ -47,8 +52,9 @@ class _MapPageState extends State<MapPage> {
                           BitmapDescriptor.hueAzure),
                       position: _currentP!),
                   Marker(
-                      markerId: MarkerId("_destinationLocation"),
-                      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+                      markerId: MarkerId("_startLocation"),
+                      icon: BitmapDescriptor.defaultMarkerWithHue(
+                          BitmapDescriptor.hueOrange),
                       position: _startP!)
                 }),
     );
@@ -85,18 +91,28 @@ class _MapPageState extends State<MapPage> {
       if (currentLocation.latitude != null &&
           currentLocation.longitude != null) {
         setState(() {
-          if (_currentP == null) { // set the start position
+          if (_currentP == null) {
+            // set the start position
             _currentP =
                 LatLng(currentLocation.latitude!, currentLocation.longitude!);
             _startP = _currentP;
             cameraToPosition(_currentP!);
           } else {
+            _lastP = _currentP;
             _currentP =
                 LatLng(currentLocation.latitude!, currentLocation.longitude!);
+            _distanceCovered += calculateDistance();
+            print(_distanceCovered);
             cameraToPosition(_currentP!);
           }
         });
       }
     });
+  }
+
+  double calculateDistance() {
+    FlutterMapMath flutterMapMath = FlutterMapMath();
+    return flutterMapMath.distanceBetween(_lastP!.latitude, _lastP!.longitude,
+        _currentP!.latitude, _currentP!.longitude, "kilometers");
   }
 }
