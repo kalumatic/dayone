@@ -26,6 +26,7 @@ class _MapPageState extends State<MapPage> {
   LatLng? _startP = null;
 
   double _distanceCovered = 0.0;
+  final _stopwatch = Stopwatch(); // measuring time elapsed
 
   @override
   void initState() {
@@ -97,12 +98,15 @@ class _MapPageState extends State<MapPage> {
                 LatLng(currentLocation.latitude!, currentLocation.longitude!);
             _startP = _currentP;
             cameraToPosition(_currentP!);
+            _stopwatch.start();
           } else {
             _lastP = _currentP;
             _currentP =
                 LatLng(currentLocation.latitude!, currentLocation.longitude!);
             _distanceCovered += calculateDistance();
-            print(_distanceCovered);
+            print("Distance: ${_distanceCovered.toStringAsFixed(2)}km");
+            double timeElapsed = _stopwatch.elapsedMilliseconds / 1000;
+            print("Time: ${timeElapsed.toStringAsFixed(2)}s");
             cameraToPosition(_currentP!);
           }
         });
