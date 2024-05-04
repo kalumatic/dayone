@@ -20,6 +20,7 @@ class _MapPageState extends State<MapPage> {
   static const LatLng _MATF = LatLng(44.820048144999575, 20.458771869031093);
 
   LatLng? _currentP = null;
+  LatLng? _startP = null;
 
   @override
   void initState() {
@@ -47,8 +48,8 @@ class _MapPageState extends State<MapPage> {
                       position: _currentP!),
                   Marker(
                       markerId: MarkerId("_destinationLocation"),
-                      icon: BitmapDescriptor.defaultMarker,
-                      position: _MATF)
+                      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+                      position: _startP!)
                 }),
     );
   }
@@ -84,9 +85,16 @@ class _MapPageState extends State<MapPage> {
       if (currentLocation.latitude != null &&
           currentLocation.longitude != null) {
         setState(() {
-          _currentP =
-              LatLng(currentLocation.latitude!, currentLocation.longitude!);
-          cameraToPosition(_currentP!);
+          if (_currentP == null) { // set the start position
+            _currentP =
+                LatLng(currentLocation.latitude!, currentLocation.longitude!);
+            _startP = _currentP;
+            cameraToPosition(_currentP!);
+          } else {
+            _currentP =
+                LatLng(currentLocation.latitude!, currentLocation.longitude!);
+            cameraToPosition(_currentP!);
+          }
         });
       }
     });
