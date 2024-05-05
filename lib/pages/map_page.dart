@@ -34,36 +34,94 @@ class _MapPageState extends State<MapPage> {
     getLocationUpdates();
   }
 
+  double _pinPill = 0;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _currentP == null
-          ? const Center(child: Text("Loading..."))
-          : GoogleMap(
-              onMapCreated: ((GoogleMapController controller) =>
-                  _mapController.complete(controller)),
-              initialCameraPosition: CameraPosition(
-                target: _MATF,
-                zoom: 18,
+      body: Stack(
+        children: [
+          Container(
+              child: _currentP == null
+                  ? const Center(child: Text("Loading..."))
+                  : GoogleMap(
+                      onMapCreated: ((GoogleMapController controller) =>
+                          _mapController.complete(controller)),
+                      initialCameraPosition: CameraPosition(
+                        target: _MATF,
+                        zoom: 14,
+                      ),
+                      markers: {
+                        Marker(
+                            markerId: MarkerId("_currentLocation"),
+                            icon: BitmapDescriptor.defaultMarkerWithHue(
+                                BitmapDescriptor.hueAzure),
+                            position: _currentP!),
+                        Marker(
+                            markerId: MarkerId("_startLocation"),
+                            icon: BitmapDescriptor.defaultMarkerWithHue(
+                                BitmapDescriptor.hueOrange),
+                            position: _startP!)
+                      },
+                      onTap: (cordinate) {
+                        setState(() {
+                          _pinPill = 0;
+                        });
+                      },
+                    )),
+          Container(
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: GestureDetector(
+                onVerticalDragUpdate: (DragUpdateDetails details) {
+                  setState(() {
+                    _pinPill = 1;
+                  });
+                },
+                child: AnimatedContainer(
+                    duration: Duration(milliseconds: 500),
+                    curve: Curves.fastOutSlowIn,
+                    width: MediaQuery.of(context).size.width,
+                    height: _pinPill == 0
+                        ? MediaQuery.of(context).size.height / 6
+                        : MediaQuery.of(context).size.height / 3.2,
+                    decoration: BoxDecoration(
+                        color: const Color(0xFF00246B),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(30),
+                          topRight: Radius.circular(30),
+                        ),
+                        boxShadow: <BoxShadow>[
+                          BoxShadow(
+                              blurRadius: 20,
+                              offset: Offset.zero,
+                              color: Colors.grey.withOpacity(0.5))
+                        ]),
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            child: Text(
+                              " Distance: ${_distanceCovered.toStringAsFixed(2)}km\n Time elapsed: ${(_stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(2)}s",
+                              textScaler: TextScaler.linear(2.0),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFFCADCFC)),
+                            ),
+                          )
+                        ])),
               ),
-              markers: {
-                  Marker(
-                      markerId: MarkerId("_currentLocation"),
-                      icon: BitmapDescriptor.defaultMarkerWithHue(
-                          BitmapDescriptor.hueAzure),
-                      position: _currentP!),
-                  Marker(
-                      markerId: MarkerId("_startLocation"),
-                      icon: BitmapDescriptor.defaultMarkerWithHue(
-                          BitmapDescriptor.hueOrange),
-                      position: _startP!)
-                }),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Future<void> cameraToPosition(LatLng pos) async {
     final GoogleMapController controller = await _mapController.future;
-    CameraPosition _newCameraPosition = CameraPosition(target: pos, zoom: 18);
+    CameraPosition _newCameraPosition = CameraPosition(target: pos, zoom: 15);
     await controller
         .animateCamera(CameraUpdate.newCameraPosition(_newCameraPosition));
   }
