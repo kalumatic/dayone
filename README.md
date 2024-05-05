@@ -12,7 +12,7 @@ The app was built in Android Studio.
 
 ## Installation and Running the App
 
-1. Download the latest APK file from the [releases](link_to_releases) section.
+1. Download the latest APK file from the releases section.
 2. Install the APK on your Android device.
 3. Open the app and grant necessary permissions to access location services.
 
