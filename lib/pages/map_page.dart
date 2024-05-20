@@ -103,7 +103,9 @@ class _MapPageState extends State<MapPage> {
                         children: [
                           Container(
                             child: Text(
-                              " Distance: ${_distanceCovered.toStringAsFixed(2)}km\n Time elapsed: ${(_printDuration(Duration(milliseconds: _stopwatch.elapsedMilliseconds)))}",
+                              " Duration: ${(_printDuration(Duration(milliseconds: _stopwatch.elapsedMilliseconds)))}"
+                              "\n Distance: ${_distanceCovered.toStringAsFixed(2)} (km)"
+                              "\n Pace: ${(_printPace(Duration(milliseconds: _distanceCovered == 0.0 ? 0 : (_stopwatch.elapsedMilliseconds / _distanceCovered).toInt())))} (min/km)",
                               textScaler: TextScaler.linear(2.0),
                               style: TextStyle(
                                   fontWeight: FontWeight.bold,
@@ -176,10 +178,16 @@ class _MapPageState extends State<MapPage> {
   }
 
   String _printDuration(Duration duration) {
-    String negativeSign = duration.isNegative ? '-' : '';
     String twoDigits(int n) => n.toString().padLeft(2, "0");
     String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60).abs());
     String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60).abs());
-    return "$negativeSign${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
+    return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
+  }
+
+  String _printPace(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60).abs());
+    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60).abs());
+    return "$twoDigitMinutes:$twoDigitSeconds";
   }
 }
