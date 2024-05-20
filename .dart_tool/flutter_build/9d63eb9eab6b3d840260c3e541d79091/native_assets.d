@@ -1,0 +1,1 @@
+ C:\\Program\ Files\\Git\\matf\\dayone\\.dart_tool\\flutter_build\\9d63eb9eab6b3d840260c3e541d79091\\native_assets.yaml: 

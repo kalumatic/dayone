@@ -103,7 +103,7 @@ class _MapPageState extends State<MapPage> {
                         children: [
                           Container(
                             child: Text(
-                              " Distance: ${_distanceCovered.toStringAsFixed(2)}km\n Time elapsed: ${(_stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(2)}s",
+                              " Distance: ${_distanceCovered.toStringAsFixed(2)}km\n Time elapsed: ${(_printDuration(Duration(milliseconds: _stopwatch.elapsedMilliseconds)))}",
                               textScaler: TextScaler.linear(2.0),
                               style: TextStyle(
                                   fontWeight: FontWeight.bold,
@@ -162,9 +162,6 @@ class _MapPageState extends State<MapPage> {
             _currentP =
                 LatLng(currentLocation.latitude!, currentLocation.longitude!);
             _distanceCovered += calculateDistance();
-            print("Distance: ${_distanceCovered.toStringAsFixed(2)}km");
-            double timeElapsed = _stopwatch.elapsedMilliseconds / 1000;
-            print("Time: ${timeElapsed.toStringAsFixed(2)}s");
             cameraToPosition(_currentP!);
           }
         });
@@ -176,5 +173,13 @@ class _MapPageState extends State<MapPage> {
     FlutterMapMath flutterMapMath = FlutterMapMath();
     return flutterMapMath.distanceBetween(_lastP!.latitude, _lastP!.longitude,
         _currentP!.latitude, _currentP!.longitude, "kilometers");
+  }
+
+  String _printDuration(Duration duration) {
+    String negativeSign = duration.isNegative ? '-' : '';
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60).abs());
+    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60).abs());
+    return "$negativeSign${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
   }
 }
