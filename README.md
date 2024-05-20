@@ -6,9 +6,11 @@ A mobile app developed in Flutter framework (Dart language) to help runners trac
 
 <img alt="Starting Position" src="./assets/images/screenshot1.png" width="270" height="600" />
 <img alt="Current Position" src="./assets/images/screenshot2.png" width="270" height="600" />
-Orange marker represents the starting position of your run when START is pressed for the first time.
-Blue marker represents the current location.
 
+- Orange marker represents the starting position of your run when START is pressed for the first time.
+- Blue marker represents the current location.
+
+<br />
 
 DayOne is an easy-to-use mobile software created for runners (or cyclists, come to think of it). It utilizes Google Maps API, offering real-time tracking of your run. DayOne helps you monitor your progress, set goals, and stay motivated. Key features include:
 - Start and stop run tracking with a single tap
