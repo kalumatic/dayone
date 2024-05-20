@@ -21,6 +21,8 @@ class _MapPageState extends State<MapPage> {
   static const LatLng _MATF =
       LatLng(44.820048144999575, 20.458771869031093); // just for start position
 
+  bool start = false;
+
   LatLng? _currentP = null;
   LatLng? _lastP = null;
   LatLng? _startP = null;
@@ -61,7 +63,7 @@ class _MapPageState extends State<MapPage> {
                             markerId: MarkerId("_startLocation"),
                             icon: BitmapDescriptor.defaultMarkerWithHue(
                                 BitmapDescriptor.hueOrange),
-                            position: _startP!)
+                            position: _startP == null ? _currentP! : _startP!)
                       },
                       onTap: (cordinate) {
                         setState(() {
@@ -98,15 +100,27 @@ class _MapPageState extends State<MapPage> {
                               color: Colors.grey.withOpacity(0.5))
                         ]),
                     child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          ElevatedButton(
+                            style: ButtonStyle(
+                              foregroundColor: MaterialStateProperty.all<Color>(
+                                  Colors.lightBlue),
+                            ),
+                            onPressed: () {
+                              start = true;
+                              _stopwatch.start();
+                            },
+                            child: Text('START',
+                                style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
                           Container(
                             child: Text(
                               " Duration: ${(_printDuration(Duration(milliseconds: _stopwatch.elapsedMilliseconds)))}"
                               "\n Distance: ${_distanceCovered.toStringAsFixed(2)} (km)"
                               "\n Pace: ${(_printPace(Duration(milliseconds: _distanceCovered == 0.0 ? 0 : (_stopwatch.elapsedMilliseconds / _distanceCovered).toInt())))} (min/km)",
-                              textScaler: TextScaler.linear(2.0),
+                              textScaler: TextScaler.linear(1.5),
                               style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: const Color(0xFFCADCFC)),
@@ -156,10 +170,11 @@ class _MapPageState extends State<MapPage> {
             // set the start position
             _currentP =
                 LatLng(currentLocation.latitude!, currentLocation.longitude!);
-            _startP = _currentP;
             cameraToPosition(_currentP!);
-            _stopwatch.start();
           } else {
+            if (_startP == null && start) {
+              _startP = _currentP;
+            }
             _lastP = _currentP;
             _currentP =
                 LatLng(currentLocation.latitude!, currentLocation.longitude!);
@@ -172,6 +187,9 @@ class _MapPageState extends State<MapPage> {
   }
 
   double calculateDistance() {
+    if (!start) {
+      return 0.0;
+    }
     FlutterMapMath flutterMapMath = FlutterMapMath();
     return flutterMapMath.distanceBetween(_lastP!.latitude, _lastP!.longitude,
         _currentP!.latitude, _currentP!.longitude, "kilometers");
