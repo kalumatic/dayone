@@ -109,10 +109,17 @@ class _MapPageState extends State<MapPage> {
                                   Colors.lightBlue),
                             ),
                             onPressed: () {
-                              start = true;
-                              _stopwatch.start();
+                              if (start) {
+                                start = false;
+                                _stopwatch.stop();
+                                print(start);
+                              } else {
+                                start = true;
+                                _stopwatch.start();
+                              }
+
                             },
-                            child: Text('START',
+                            child: Text(start ? 'STOP' : 'START',
                                 style: TextStyle(fontWeight: FontWeight.bold)),
                           ),
                           Container(
