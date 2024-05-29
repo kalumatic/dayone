@@ -1,9 +1,12 @@
 import 'dart:async';
 
+import 'package:dayone/consts.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:flutter_map_math/flutter_geo_math.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:geolocator/geolocator.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -19,7 +22,11 @@ class _MapPageState extends State<MapPage> {
       Completer<GoogleMapController>();
 
   static const LatLng _MATF =
-      LatLng(44.820048144999575, 20.458771869031093); // just for start position
+      LatLng(44.820048144999575, 20.458771869031093); // just for end position
+  static const LatLng _genex =
+      LatLng(44.8204479123115, 20.405159588916398); // just for start position
+
+  Map<PolylineId, Polyline> polylines = {};
 
   bool start = false;
 
@@ -33,7 +40,11 @@ class _MapPageState extends State<MapPage> {
   @override
   void initState() {
     super.initState();
-    getLocationUpdates();
+    getLocationUpdates().then((_) => {
+          getPolylinePoints().then((coordinates) => {
+                generatePolylineFromPoints(coordinates),
+              })
+        });
   }
 
   double _pinPill = 0;
@@ -49,7 +60,7 @@ class _MapPageState extends State<MapPage> {
                   : GoogleMap(
                       onMapCreated: ((GoogleMapController controller) =>
                           _mapController.complete(controller)),
-                      initialCameraPosition: CameraPosition(
+                      initialCameraPosition: const CameraPosition(
                         target: _MATF,
                         zoom: 14,
                       ),
@@ -63,8 +74,9 @@ class _MapPageState extends State<MapPage> {
                             markerId: MarkerId("_startLocation"),
                             icon: BitmapDescriptor.defaultMarkerWithHue(
                                 BitmapDescriptor.hueOrange),
-                            position: _startP == null ? _currentP! : _startP!)
+                            position: _startP!)
                       },
+                      polylines: Set<Polyline>.of(polylines.values),
                       onTap: (cordinate) {
                         setState(() {
                           _pinPill = 0;
@@ -81,7 +93,7 @@ class _MapPageState extends State<MapPage> {
                   });
                 },
                 child: AnimatedContainer(
-                    duration: Duration(milliseconds: 500),
+                    duration: const Duration(milliseconds: 500),
                     curve: Curves.fastOutSlowIn,
                     width: MediaQuery.of(context).size.width,
                     height: _pinPill == 0
@@ -89,7 +101,7 @@ class _MapPageState extends State<MapPage> {
                         : MediaQuery.of(context).size.height / 3.2,
                     decoration: BoxDecoration(
                         color: const Color(0xFF00246B),
-                        borderRadius: BorderRadius.only(
+                        borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(30),
                           topRight: Radius.circular(30),
                         ),
@@ -108,16 +120,16 @@ class _MapPageState extends State<MapPage> {
                               foregroundColor: MaterialStateProperty.all<Color>(
                                   Colors.lightBlue),
                             ),
-                            onPressed: () {
+                            onPressed: () async {
                               if (start) {
                                 start = false;
                                 _stopwatch.stop();
-                                print(start);
+                                _stopwatch.reset();
+                                _distanceCovered = 0.0;
                               } else {
                                 start = true;
                                 _stopwatch.start();
                               }
-
                             },
                             child: Text(start ? 'STOP' : 'START',
                                 style: TextStyle(fontWeight: FontWeight.bold)),
@@ -127,10 +139,10 @@ class _MapPageState extends State<MapPage> {
                               " Duration: ${(_printDuration(Duration(milliseconds: _stopwatch.elapsedMilliseconds)))}"
                               "\n Distance: ${_distanceCovered.toStringAsFixed(2)} (km)"
                               "\n Pace: ${(_printPace(Duration(milliseconds: _distanceCovered == 0.0 ? 0 : (_stopwatch.elapsedMilliseconds / _distanceCovered).toInt())))} (min/km)",
-                              textScaler: TextScaler.linear(1.5),
-                              style: TextStyle(
+                              textScaler: const TextScaler.linear(1.5),
+                              style: const TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: const Color(0xFFCADCFC)),
+                                  color: Color(0xFFCADCFC)),
                             ),
                           )
                         ])),
@@ -147,6 +159,7 @@ class _MapPageState extends State<MapPage> {
     CameraPosition _newCameraPosition = CameraPosition(target: pos, zoom: 15);
     await controller
         .animateCamera(CameraUpdate.newCameraPosition(_newCameraPosition));
+    generatePolylineFromPoints(await getPolylinePoints());
   }
 
   Future<void> getLocationUpdates() async {
@@ -169,7 +182,7 @@ class _MapPageState extends State<MapPage> {
     }
 
     _locationController.onLocationChanged
-        .listen((LocationData currentLocation) {
+        .listen((LocationData currentLocation) async {
       if (currentLocation.latitude != null &&
           currentLocation.longitude != null) {
         setState(() {
@@ -182,13 +195,17 @@ class _MapPageState extends State<MapPage> {
             if (_startP == null && start) {
               _startP = _currentP;
             }
+            if (!start) {
+              _startP = _currentP;
+            }
             _lastP = _currentP;
             _currentP =
                 LatLng(currentLocation.latitude!, currentLocation.longitude!);
             _distanceCovered += calculateDistance();
             cameraToPosition(_currentP!);
           }
-        });
+        }
+        );
       }
     });
   }
@@ -214,5 +231,39 @@ class _MapPageState extends State<MapPage> {
     String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60).abs());
     String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60).abs());
     return "$twoDigitMinutes:$twoDigitSeconds";
+  }
+
+  Future<List<LatLng>> getPolylinePoints() async {
+    List<LatLng> polylineCoordinates = [];
+    PolylinePoints polylinePoints = PolylinePoints();
+    Position p = await Geolocator.getCurrentPosition();
+    if (_startP == null) {
+      _startP = LatLng(p.latitude, p.longitude);
+    }
+    PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
+        GOOGLE_MAPS_API_KEY,
+        PointLatLng(_startP!.latitude, _startP!.longitude),
+        PointLatLng(_currentP!.latitude, _currentP!.longitude),
+        travelMode: TravelMode.walking);
+    if (result.points.isNotEmpty) {
+      result.points.forEach((PointLatLng point) {
+        polylineCoordinates.add(LatLng(point.latitude, point.longitude));
+      });
+    } else {
+      print(result.errorMessage);
+    }
+    return polylineCoordinates;
+  }
+
+  void generatePolylineFromPoints(List<LatLng> polylineCoordinates) async {
+    PolylineId id = PolylineId("poly");
+    Polyline polyline = Polyline(
+        polylineId: id,
+        color: Colors.green,
+        points: polylineCoordinates,
+        width: 8);
+    setState(() {
+      polylines[id] = polyline;
+    });
   }
 }
